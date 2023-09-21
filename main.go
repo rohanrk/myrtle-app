@@ -48,7 +48,7 @@ func getMyrtleTimes() (time.Time, time.Time) {
 	days_till_myrtle := (7 - ((int)(may_first_day.Weekday() - time.Sunday))) * HOURS_IN_DAY
 	days_in_duration, err := time.ParseDuration(fmt.Sprintf("%dh", days_till_myrtle))
 	if err != nil {
-		log.Fatal("Failed to calculate time to Myrtle")
+		log.Fatalf("Failed to convert days (%d) to Duration", days_till_myrtle)
 	}
 	first_day_myrtle := may_first_day.Add(days_in_duration)
 	last_day_myrtle := first_day_myrtle.Add(getMyrtleLength())
@@ -107,10 +107,8 @@ func durationToHumanString(duration time.Duration) string {
 func handler(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().In(getLocationInTimezone())
 	myrtleStart, myrtleEnd := getMyrtleTimes()
-	log.Printf("now: %s\nmyrtle start: %s\nmyrtle_end: %s\n", now.String(), myrtleStart.String(), myrtleEnd.String())
 	start_difference := myrtleStart.Sub(now)
 	end_difference := myrtleEnd.Sub(now)
-	log.Printf("start: %d\nend: %d", start_difference, end_difference)
 	var body string
 	if start_difference > 0 {
 		body = fmt.Sprintf("Countdown to Myrtle: %s", durationToHumanString(start_difference))
@@ -119,8 +117,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		body = "See y'all next year!"
 	}
-
-	log.Printf("Got body: %s\n", body)
 
 	rendered := Content{now.Year(), body}
 	err := templates.Execute(w, rendered)
@@ -133,8 +129,4 @@ func main() {
 	http.HandleFunc("/", handler)
 	log.Println("Starting server on port 8080 and listening")
 	log.Fatal(http.ListenAndServe(":8080", nil))
-	// myrtleStart, _ := getMyrtleTimes()
-	// start_difference := myrtleStart.Sub(time.Now())
-	// log.Println(durationToHumanString(start_difference))
-	// log.Println(start_difference.String())
 }
