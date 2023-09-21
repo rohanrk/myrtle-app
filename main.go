@@ -20,7 +20,7 @@ const (
 	HOURS_IN_DAY = 24
 )
 
-var templates = template.Must(template.ParseFiles("index.html"))
+var templates = template.Must(template.ParseFiles("web/index.html"))
 
 func getMyrtleLength() time.Duration {
 	duration, err := time.ParseDuration(fmt.Sprintf("%dh", MYRTLE_DAYS*HOURS_IN_DAY))
