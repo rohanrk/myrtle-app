@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -9,8 +10,10 @@ import (
 	"time"
 )
 
-type Content struct {
+type TemplateContent struct {
 	Year int
+}
+type CountdownResponse struct {
 	Body string
 }
 
@@ -20,7 +23,7 @@ const (
 	HOURS_IN_DAY = 24
 )
 
-var templates = template.Must(template.ParseFiles("web/index.html"))
+var templates = template.Must(template.ParseFiles("web/index.html", "web/style.css", "web/query.js"))
 
 func getMyrtleLength() time.Duration {
 	duration, err := time.ParseDuration(fmt.Sprintf("%dh", MYRTLE_DAYS*HOURS_IN_DAY))
@@ -104,7 +107,7 @@ func durationToHumanString(duration time.Duration) string {
 	return string(buf[w:])
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func countdownHandler(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().In(getLocationInTimezone())
 	myrtleStart, myrtleEnd := getMyrtleTimes()
 	start_difference := myrtleStart.Sub(now)
@@ -118,15 +121,34 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		body = "See y'all next year!"
 	}
 
-	rendered := Content{now.Year(), body}
+	resp := CountdownResponse{body}
+
+	enc := json.NewEncoder(w)
+	err := enc.Encode(resp)
+	if err != nil {
+		log.Fatalf("Failed to write HTTP response: %s", err.Error())
+	}
+}
+
+func htmlHandler(w http.ResponseWriter, r *http.Request) {
+	now := time.Now().In(getLocationInTimezone())
+	var year = now.Year()
+	if now.Month() > time.May {
+		year += 1
+	}
+	rendered := TemplateContent{year}
 	err := templates.Execute(w, rendered)
 	if err != nil {
-		log.Fatalf("Failed to build html template with %s", err.Error())
+		log.Fatalf("Failed to render html")
 	}
 }
 
 func main() {
-	http.HandleFunc("/", handler)
+	fs := http.FileServer(http.Dir("./web"))
+	http.Handle("/web/", http.StripPrefix("/web/", fs))
+
+	http.HandleFunc("/", htmlHandler)
+	http.HandleFunc("/countdown", countdownHandler)
 	log.Println("Starting server on port 8080 and listening")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
