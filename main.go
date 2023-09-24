@@ -78,7 +78,6 @@ func durationToHumanString(duration time.Duration) string {
 	var buf [64]byte
 	w := len(buf)
 	u := (uint64)(math.Round(duration.Seconds()))
-	fmt.Printf("secs: %d\nremainder: %d\n", u, u%60)
 	w--
 	buf[w] = 's'
 	w = fmtInt(buf[:w], u%60)
